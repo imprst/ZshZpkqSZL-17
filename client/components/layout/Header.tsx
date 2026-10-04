@@ -49,6 +49,7 @@ import {
   clearCachedHomeIdentity,
   getCachedHomeIdentity,
 } from "../../lib/homeIdentity";
+import { useHotelTenant } from "../../lib/hotelTenant";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +65,8 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { resolvedTheme, setTheme } = useTheme();
+  const { tenant } = useHotelTenant();
+  const hotelName = tenant?.name || "Sheraton";
 
   // Load notifications for current user
   useEffect(() => {
@@ -419,7 +422,7 @@ const Header = () => {
             <Crown className="h-8 w-8 text-sheraton-gold" />
             <div className="flex flex-col">
               <span className="text-xl font-bold text-sheraton-navy">
-                Sheraton
+                {hotelName}
               </span>
               <span className="text-xs text-sheraton-gold font-medium tracking-wide">
                 SPECIAL
@@ -516,7 +519,7 @@ const Header = () => {
               <Crown className="h-6 w-6 text-sheraton-gold" />
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-sheraton-navy">
-                  Sheraton
+                  {hotelName}
                 </span>
                 <span className="text-xs text-sheraton-gold font-medium tracking-wide">
                   SPECIAL

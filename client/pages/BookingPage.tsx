@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "../lib/supabase";
+import { useHotelTenant } from "../lib/hotelTenant";
 import BookingCheckoutModal from "../components/booking/BookingCheckoutModal";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -54,6 +55,7 @@ const money = (value: number, currency: string) => new Intl.NumberFormat(undefin
 
 const BookingPage = () => {
   const { toast } = useToast();
+  const { tenant, loading: tenantLoading } = useHotelTenant();
   const [settings, setSettings] = useState<BookingSettings>(defaultSettings);
   const [offers, setOffers] = useState<BookingOffer[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
@@ -80,12 +82,18 @@ const BookingPage = () => {
   const [roomForm, setRoomForm] = useState({ name: "", room_type: "suite", description: "", image_url: "", size_sqm: "", max_guests: "2", available_units: "1", nightly_rate: "", original_nightly_rate: "", currency_code: "USD", amenities: "Wi-Fi, King bed", status: "published" as "draft" | "published" | "unavailable" });
 
   const loadPage = async () => {
+    if (tenantLoading) return;
+    if (!tenant) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const [settingsResult, offerResult, roomResult, authResult] = await Promise.all([
-        supabase.from("hotel_booking_page_settings").select("title,subtitle").eq("id", true).maybeSingle(),
-        supabase.from("hotel_booking_offers").select("id,title,description,discount_percentage,minimum_nights,starts_at,ends_at").eq("is_active", true).order("display_order"),
-        supabase.from("hotel_public_room_listings").select("id,organization_id,name,room_type,description,image_url,size_sqm,max_guests,available_units,nightly_rate,original_nightly_rate,currency_code,amenities,status,hotel_name,hotel_city,hotel_country,hotel_classification").order("nightly_rate"),
+        supabase.from("hotel_booking_page_settings").select("title,subtitle").eq("organization_id", tenant.organizationId).eq("id", true).maybeSingle(),
+        supabase.from("hotel_booking_offers").select("id,title,description,discount_percentage,minimum_nights,starts_at,ends_at").eq("organization_id", tenant.organizationId).eq("is_active", true).order("display_order"),
+        supabase.from("hotel_public_room_listings").select("id,organization_id,name,room_type,description,image_url,size_sqm,max_guests,available_units,nightly_rate,original_nightly_rate,currency_code,amenities,status,hotel_name,hotel_city,hotel_country,hotel_classification").eq("organization_id", tenant.organizationId).order("nightly_rate"),
         supabase.auth.getUser(),
       ]);
       if (settingsResult.error) throw settingsResult.error;
@@ -101,8 +109,7 @@ const BookingPage = () => {
         if (profile?.role === "manager") {
           setManagerUserId(user.id);
           setHotelClassification(profile.hotel_star_rating ? Number(profile.hotel_star_rating) : null);
-          const { data: organizationId, error: organizationError } = await supabase.rpc("get_or_create_books_organization");
-          if (organizationError) throw organizationError;
+          const organizationId = tenant.organizationId;
           setManagerOrganizationId(organizationId);
           const { data: managerRooms, error: managerRoomsError } = await supabase.from("hotel_rooms").select("id,organization_id,name,room_type,description,image_url,size_sqm,max_guests,available_units,nightly_rate,original_nightly_rate,currency_code,amenities,status").eq("organization_id", organizationId).order("created_at", { ascending: false });
           if (managerRoomsError) throw managerRoomsError;
@@ -130,7 +137,7 @@ const BookingPage = () => {
     } catch {
       localStorage.removeItem("hotel-booking-access");
     }
-  }, []);
+  }, [tenant, tenantLoading]);
 
   useEffect(() => {
     if (!checkIn || !checkOut || checkOut <= checkIn) {

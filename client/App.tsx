@@ -6,6 +6,7 @@ import ServicesFooter from "./components/layout/ServicesFooter";
 import ServicesHomePage from "./pages/ServicesHomePage";
 import HomePage from "./pages/HomePage";
 import { supabase } from "./lib/supabase";
+import { useHotelTenant } from "./lib/hotelTenant";
 import {
   cacheHomeIdentity,
   getCachedHomeIdentity,
@@ -44,6 +45,7 @@ import { Toaster } from "./components/ui/sonner";
 import "./global.css";
 
 function RoleAwareHomePage() {
+  const { tenant } = useHotelTenant();
   const cachedIdentity = getCachedHomeIdentity();
   const [role, setRole] = useState<HomeRole>(cachedIdentity?.role ?? "guest");
   const [displayName, setDisplayName] = useState(cachedIdentity?.displayName ?? "Special Guest");
@@ -121,7 +123,7 @@ function RoleAwareHomePage() {
   }
 
   if (role === "guest") {
-    return <HomePage displayName={displayName} />;
+    return <HomePage displayName={displayName} hotelName={tenant?.name} />;
   }
 
   return <ServicesHomePage role={role} displayName={displayName} />;

@@ -33,9 +33,10 @@ import {
 
 interface HomePageProps {
   displayName?: string;
+  hotelName?: string;
 }
 
-const HomePage = ({ displayName = "Special Guest" }: HomePageProps) => {
+const HomePage = ({ displayName = "Special Guest", hotelName = "Sheraton" }: HomePageProps) => {
   const [timeOfDay, setTimeOfDay] = useState("");
   const [currentOffer, setCurrentOffer] = useState(0);
 
@@ -171,7 +172,7 @@ const HomePage = ({ displayName = "Special Guest" }: HomePageProps) => {
             </h1>
 
             <p className="text-xl md:text-2xl mb-8 text-white/90 leading-relaxed">
-              Welcome to Sheraton Special - where technology meets hospitality
+              Welcome to {hotelName} Special - where technology meets hospitality
               to create extraordinary moments that make you feel truly special,
               every single time.
             </p>
