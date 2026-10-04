@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import CheckoutPage from "../components/checkout/CheckoutPage";
 import { menuItemFromDatabaseRow, MenuItem } from "../lib/menuData";
 import { supabase } from "../lib/supabase";
+import { useHotelTenant } from "../lib/hotelTenant";
 import { getPendingCheckout, type ResumableMenuOrder } from "../lib/flutterwave";
 import { loadActiveMenuCart, syncActiveMenuCart } from "../lib/menuCart";
 import {
@@ -61,6 +62,7 @@ import {
 } from "lucide-react";
 
 const MenuPage = () => {
+  const { tenant, loading: tenantLoading } = useHotelTenant();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cart, setCart] = useState<{ [key: string]: number }>({});
@@ -181,16 +183,24 @@ const MenuPage = () => {
   ];
 
   useEffect(() => {
+    if (tenantLoading) return;
+    if (!tenant) {
+      setMenuItems([]);
+      setMenuItemsReady(true);
+      return;
+    }
+
     supabase
       .from("menu_items")
       .select("*")
+      .eq("organization_id", tenant.organizationId)
       .eq("is_published", true)
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         if (data) setMenuItems(data.map(menuItemFromDatabaseRow));
       })
       .finally(() => setMenuItemsReady(true));
-  }, []);
+  }, [tenant, tenantLoading]);
 
   const filteredItems = menuItems.filter((item) => {
     const matchesSearch =
